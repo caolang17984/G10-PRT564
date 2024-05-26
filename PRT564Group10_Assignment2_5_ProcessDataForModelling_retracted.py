@@ -142,17 +142,39 @@ def separating_column_subject(retractions_df, column_name='Subject', delimiter='
 #--------------------------------------------------------------------------------
 # Read data from file
 #--------------------------------------------------------------------------------
-data_df = pd.read_csv('download/result_country.csv', encoding='utf-8')
+data_df = pd.read_csv('result/cleandata.csv', encoding='utf-8')
 journalRank_df = pd.read_csv('download/journal_rank_2023.csv', encoding='utf-8')
 # Left join retraction_df with journalRank_df based on 'Journal'
 alldata_df = pd.merge(data_df, journalRank_df, left_on='Journal', right_on='Journal', how='left', suffixes=('', '_rank'))
-# print(alldata_df.columns)
 # print(raw_df.columns)
-raw_df = alldata_df[['Record ID', 'Author','Title','Year','Journal','Cited by', 'DOI', 'Institution','Publisher','Document Type', 'Country', 'Rank']].copy()
-raw_df['Retraction_Year'] = ''
-raw_df = raw_df[['Record ID', 'Author','Title','Year', 'Retraction_Year', 'Journal','Cited by', 'DOI', 'Institution','Publisher','Document Type', 'Country', 'Rank']]
-raw_df.columns = ['Record ID', 'Author','Title','Public_Year', 'Retraction_Year', 'Journal','Cited by', 'DOI', 'Institution','Publisher','Document Type', 'Country', 'Rank']
-print(raw_df.columns)
+raw_df = alldata_df[['Record ID', 'Author','Title',
+                     'OriginalPaperDate', 'Journal','CitationCount', 'OriginalPaperDOI', 
+                     'Institution','Publisher', 
+                     'Country', 'Rank','RetractionDate' ]].copy()
+raw_df['Document Type'] = 'Retracted'
+raw_df.columns = ['Record ID', 'Author','Title',
+                      'OriginalPaperDate', 'Journal','Cited by', 'DOI', 
+                     'Institution','Publisher',
+                     'Country', 'Rank','RetractionDate', 'Document Type']
+# print(raw_df.columns)
+
+# Feature Engineering: Extract Year
+# Convert the 'Date' column to datetime format if it's not already in datetime format
+raw_df['RetractionDate'] = pd.to_datetime(raw_df['RetractionDate'], format='%d/%m/%Y')
+raw_df['OriginalPaperDate'] = pd.to_datetime(raw_df['OriginalPaperDate'], format='%d/%m/%Y')
+# Extract the year into a new column
+raw_df['RetractionDate'] = raw_df['RetractionDate'].dt.year
+raw_df['OriginalPaperDate'] = raw_df['OriginalPaperDate'].dt.year
+
+raw_df.columns = ['Record ID', 'Author','Title',
+                     'Public_Year', 'Journal','Cited by', 'DOI', 
+                     'Institution','Publisher',
+                     'Country', 'Rank', 'Retraction_Year', 'Document Type']
+raw_df = raw_df[['Record ID', 'Author','Title',
+                     'Public_Year', 'Retraction_Year', 'Journal','Cited by', 'DOI', 
+                     'Institution','Publisher', 'Document Type',
+                     'Country', 'Rank']]
+
 
 #--------------------------------------------------------------------------------
 # Feature Engineering: Title Length
@@ -176,7 +198,7 @@ raw_df['Author_Count'] = raw_df['Author'].str.count(';') + 1
 # Extract data for Institution
 raw_df['Inst_Count'] = raw_df['Institution'].str.count(';') + 1
 print(raw_df.columns)
-raw_df.to_csv("download/download_data_model_v1.0.csv", index=False)
+raw_df.to_csv("download/retracted_model.csv", index=False)
 
 
 # # Get Retraction year
